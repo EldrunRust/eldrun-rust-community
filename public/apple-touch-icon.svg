@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a1a"/>
+      <stop offset="100%" style="stop-color:#0a0a0a"/>
+    </linearGradient>
+    <linearGradient id="icon-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ed7620"/>
+      <stop offset="100%" style="stop-color:#b84413"/>
+    </linearGradient>
+  </defs>
+  <rect width="180" height="180" rx="40" fill="url(#bg-grad)"/>
+  <polygon points="90,30 150,60 150,120 90,150 30,120 30,60" fill="url(#icon-grad)"/>
+  <text x="90" y="100" font-family="Arial Black" font-size="36" fill="white" text-anchor="middle" font-weight="bold">RZ</text>
+</svg>

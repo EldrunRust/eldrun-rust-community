@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60">
+  <defs>
+    <linearGradient id="eldrun-logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#D4AF37"/>
+      <stop offset="50%" style="stop-color:#ed7620"/>
+      <stop offset="100%" style="stop-color:#8B0000"/>
+    </linearGradient>
+  </defs>
+  <!-- Crown/Triangle Icon -->
+  <polygon points="30,8 52,52 8,52" fill="none" stroke="url(#eldrun-logo-grad)" stroke-width="3"/>
+  <text x="30" y="42" font-family="Arial Black" font-size="14" fill="url(#eldrun-logo-grad)" text-anchor="middle" font-weight="bold">E</text>
+  <!-- Text -->
+  <text x="70" y="38" font-family="Arial Black" font-size="26" fill="url(#eldrun-logo-grad)" font-weight="900" letter-spacing="3">ELDRUN</text>
+  <text x="70" y="54" font-family="Arial" font-size="10" fill="#888" letter-spacing="4">PFAD DES KRIEGES</text>
+</svg>

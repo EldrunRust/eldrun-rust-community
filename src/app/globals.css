@@ -1,0 +1,198 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Medieval Gold Colors */
+  --gold-primary: #d4a853;
+  --gold-light: #fcd34d;
+  --gold-dark: #b8860b;
+  
+  /* Medieval Theme */
+  --medieval-bg: #0a0908;
+  --medieval-border: #2d2820;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  background: #0a0a0a;
+  color: #e7e7e7;
+  overflow-x: hidden;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #ed7620 0%, #b84413 100%);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #f19341 0%, #de5c14 100%);
+}
+
+/* Selection */
+::selection {
+  background: rgba(237, 118, 32, 0.3);
+  color: #fff;
+}
+
+/* Utility Classes */
+@layer utilities {
+  .text-shadow-rust {
+    text-shadow: 0 0 20px rgba(237, 118, 32, 0.5), 0 0 40px rgba(237, 118, 32, 0.3);
+  }
+
+  .text-shadow-glow {
+    text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+  }
+
+  .bg-noise {
+    position: relative;
+  }
+
+  .bg-noise::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity: 0.03;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .metal-border {
+    border: 1px solid transparent;
+    background: linear-gradient(#1a1a1a, #1a1a1a) padding-box,
+                linear-gradient(135deg, #4f4f4f 0%, #1a1a1a 50%, #4f4f4f 100%) border-box;
+  }
+
+  .rust-border {
+    border: 1px solid transparent;
+    background: linear-gradient(#1a1a1a, #1a1a1a) padding-box,
+                linear-gradient(135deg, #ed7620 0%, #b84413 50%, #ed7620 100%) border-box;
+  }
+
+  .glass-effect {
+    background: rgba(26, 26, 26, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .scanline {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .scanline::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.1) 2px,
+      rgba(0, 0, 0, 0.1) 4px
+    );
+    pointer-events: none;
+  }
+}
+
+/* Animation for glowing elements */
+@keyframes borderGlow {
+  0%, 100% {
+    border-color: rgba(237, 118, 32, 0.5);
+    box-shadow: 0 0 15px rgba(237, 118, 32, 0.2);
+  }
+  50% {
+    border-color: rgba(237, 118, 32, 0.8);
+    box-shadow: 0 0 30px rgba(237, 118, 32, 0.4);
+  }
+}
+
+.border-glow {
+  animation: borderGlow 3s ease-in-out infinite;
+}
+
+/* Rust-themed button styles */
+.btn-rust {
+  @apply relative px-8 py-3 font-display font-bold uppercase tracking-wider;
+  @apply bg-gradient-to-r from-rust-600 to-rust-700;
+  @apply text-white;
+  @apply transition-all duration-300;
+  @apply hover:from-rust-500 hover:to-rust-600;
+  @apply hover:shadow-rust-lg;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+
+.btn-rust::before {
+  content: '';
+  @apply absolute inset-0;
+  @apply bg-gradient-to-r from-rust-400/20 to-transparent;
+  @apply opacity-0 transition-opacity duration-300;
+}
+
+.btn-rust:hover::before {
+  @apply opacity-100;
+}
+
+.btn-metal {
+  @apply relative px-8 py-3 font-display font-bold uppercase tracking-wider;
+  @apply bg-gradient-to-r from-metal-800 to-metal-900;
+  @apply border border-metal-600;
+  @apply text-metal-200;
+  @apply transition-all duration-300;
+  @apply hover:border-rust-500 hover:text-rust-400;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+
+/* Card styles */
+.card-rust {
+  @apply relative p-6;
+  @apply bg-gradient-to-br from-metal-950 via-metal-900 to-metal-950;
+  @apply border border-metal-700;
+  @apply transition-all duration-500;
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+}
+
+.card-rust:hover {
+  @apply border-rust-500;
+  @apply shadow-rust;
+}
+
+/* Input styles */
+.input-rust {
+  @apply w-full px-4 py-3;
+  @apply bg-metal-950 border border-metal-700;
+  @apply text-metal-100 placeholder:text-metal-500;
+  @apply font-body text-lg;
+  @apply transition-all duration-300;
+  @apply focus:outline-none focus:border-rust-500 focus:shadow-rust;
+}
+
+/* Gradient text */
+.gradient-text-rust {
+  @apply bg-gradient-to-r from-rust-400 via-rust-500 to-rust-600 bg-clip-text text-transparent;
+}
+
+/* Container styles */
+.container-rust {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}

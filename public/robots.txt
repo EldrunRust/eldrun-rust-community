@@ -1,0 +1,5 @@
+# Eldrun: Pfad des Krieges - Community Website
+User-agent: *
+Allow: /
+
+Sitemap: https://eldrun.lol/sitemap.xml

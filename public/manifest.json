@@ -1,0 +1,72 @@
+{
+  "name": "ELDRUN - Pfad des Krieges",
+  "short_name": "ELDRUN",
+  "description": "Das ultimative MMORPG-Rust Erlebnis mit Fraktionen, Klassen, Quests und mehr!",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#c45c2c",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "de",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/apple-touch-icon.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml",
+      "purpose": "apple touch icon"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Forum",
+      "short_name": "Forum",
+      "description": "Zum Community Forum",
+      "url": "/forum"
+    },
+    {
+      "name": "Casino",
+      "short_name": "Casino",
+      "description": "Zum Casino",
+      "url": "/casino"
+    },
+    {
+      "name": "Shop",
+      "short_name": "Shop",
+      "description": "Zum Shop",
+      "url": "/shop"
+    },
+    {
+      "name": "Leaderboard",
+      "short_name": "Ranking",
+      "description": "Zum Leaderboard",
+      "url": "/leaderboard"
+    }
+  ],
+    "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://store.steampowered.com/app/252490/Rust/",
+      "id": "rust"
+    }
+  ],
+  "prefer_related_applications": false
+}

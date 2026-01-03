@@ -1,0 +1,1709 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// ELDRUN - Complete Database Schema
+// Prisma Schema for SQLite (dev) / PostgreSQL (production)
+// ═══════════════════════════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// USER & AUTHENTICATION
+// ═══════════════════════════════════════════════════════════════════════════
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  username        String    @unique
+  displayName     String?
+  passwordHash    String?
+  steamId         String?   @unique
+  discordId       String?   @unique
+  avatar          String?
+  banner          String?
+  bio             String?
+  role            String    @default("player") // player, vip, moderator, admin
+  faction         String?   // seraphar, vorgaroth
+  level           Int       @default(1)
+  xp              Int       @default(0)
+  coins           Int       @default(0)
+  casinoCoins     Int       @default(0)
+  casinoWelcomeClaimed Boolean @default(false)
+  
+  // Email verification
+  emailVerified   Boolean   @default(false)
+  verifyToken     String?
+  verifyExpires   DateTime?
+  
+  // Password reset
+  resetToken      String?
+  resetExpires    DateTime?
+  
+  // Settings
+  language        String    @default("de")
+  theme           String    @default("dark")
+  notificationsEnabled Boolean @default(true)
+  profileVisibility String  @default("public") // public, friends, private
+  
+  // Timestamps
+  lastLogin       DateTime?
+  lastActive      DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  player          Player?
+  sessions        Session[]
+  forumPosts      ForumPost[]
+  forumThreads    ForumThread[]
+  votes           Vote[]
+  appeals         Appeal[]
+  contacts        Contact[]
+  casinoStats     CasinoStats?
+  casinoHistory   CasinoGame[]
+  achievements    UserAchievement[]
+  sentMessages    PrivateMessage[]   @relation("SentMessages")
+  receivedMessages PrivateMessage[]  @relation("ReceivedMessages")
+  notifications   Notification[]
+  shopOrders      ShopOrder[]
+}
+
+model Session {
+  id            String    @id @default(cuid())
+  userId        String
+  token         String    @unique
+  userAgent     String?
+  ipAddress     String?
+  expiresAt     DateTime
+  createdAt     DateTime  @default(now())
+  
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PLAYER & GAME DATA
+// ═══════════════════════════════════════════════════════════════════════════
+
+model Player {
+  id            String    @id @default(cuid())
+  name          String
+  steamId       String    @unique
+  
+  // Stats
+  kills         Int       @default(0)
+  deaths        Int       @default(0)
+  headshots     Int       @default(0)
+  suicides      Int       @default(0)
+  pvpKills      Int       @default(0)
+  npcKills      Int       @default(0)
+  animalsKilled Int       @default(0)
+  
+  // Resources
+  woodGathered  Int       @default(0)
+  stoneGathered Int       @default(0)
+  metalGathered Int       @default(0)
+  sulfurGathered Int      @default(0)
+  
+  // Activity
+  playtime      Int       @default(0) // in minutes
+  connections   Int       @default(0)
+  lastSeen      DateTime  @default(now())
+  firstJoin     DateTime  @default(now())
+  
+  // Clan
+  clanId        String?
+  clanRole      String?   // leader, officer, member
+  
+  // Relations
+  userId        String?   @unique
+  user          User?     @relation(fields: [userId], references: [id])
+  clan          Clan?     @relation(fields: [clanId], references: [id])
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Clan {
+  id            String    @id @default(cuid())
+  tag           String    @unique
+  name          String
+  description   String?
+  logo          String?
+  banner        String?
+  color         String    @default("#D4AF37")
+  
+  // Stats
+  territory     Int       @default(0)
+  totalKills    Int       @default(0)
+  raidWins      Int       @default(0)
+  memberCount   Int       @default(0)
+  
+  // Settings
+  isRecruiting  Boolean   @default(true)
+  isPublic      Boolean   @default(true)
+  minLevel      Int       @default(1)
+  
+  // Leader
+  leaderId      String?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  members       Player[]
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FORUM
+// ═══════════════════════════════════════════════════════════════════════════
+
+model ForumCategory {
+  id            String    @id @default(cuid())
+  name          String
+  slug          String    @unique
+  description   String?
+  icon          String?
+  color         String    @default("#D4AF37")
+  order         Int       @default(0)
+  isLocked      Boolean   @default(false)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  boards        ForumBoard[]
+}
+
+model ForumBoard {
+  id            String    @id @default(cuid())
+  categoryId    String
+  name          String
+  slug          String    @unique
+  description   String?
+  icon          String?
+  order         Int       @default(0)
+  isLocked      Boolean   @default(false)
+  
+  // Stats
+  threadCount   Int       @default(0)
+  postCount     Int       @default(0)
+  lastPostAt    DateTime?
+  lastPostById  String?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  category      ForumCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  threads       ForumThread[]
+}
+
+model ForumThread {
+  id            String    @id @default(cuid())
+  boardId       String
+  authorId      String
+  title         String
+  slug          String
+  content       String
+  
+  // Flags
+  isPinned      Boolean   @default(false)
+  isLocked      Boolean   @default(false)
+  isAnnouncement Boolean  @default(false)
+  isDeleted     Boolean   @default(false)
+  
+  // Stats
+  views         Int       @default(0)
+  replyCount    Int       @default(0)
+  likeCount     Int       @default(0)
+  lastReplyAt   DateTime?
+  lastReplyById String?
+  
+  // Poll (optional)
+  pollQuestion  String?
+  pollOptions   String?   // JSON array
+  pollVotes     String?   // JSON object {optionId: count}
+  pollEndsAt    DateTime?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  board         ForumBoard @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  author        User       @relation(fields: [authorId], references: [id])
+  posts         ForumPost[]
+  tags          ForumTag[]
+}
+
+model ForumPost {
+  id            String    @id @default(cuid())
+  threadId      String
+  authorId      String
+  content       String
+  
+  // Flags
+  isEdited      Boolean   @default(false)
+  editedAt      DateTime?
+  isDeleted     Boolean   @default(false)
+  deletedAt     DateTime?
+  
+  // Stats
+  likeCount     Int       @default(0)
+  
+  // Reply to another post
+  replyToId     String?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  thread        ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  author        User        @relation(fields: [authorId], references: [id])
+  replyTo       ForumPost?  @relation("PostReplies", fields: [replyToId], references: [id])
+  replies       ForumPost[] @relation("PostReplies")
+}
+
+model ForumTag {
+  id            String    @id @default(cuid())
+  name          String    @unique
+  slug          String    @unique
+  color         String    @default("#666666")
+  
+  threads       ForumThread[]
+}
+
+model PrivateMessage {
+  id            String    @id @default(cuid())
+  senderId      String
+  receiverId    String
+  subject       String?
+  content       String
+  isRead        Boolean   @default(false)
+  readAt        DateTime?
+  
+  createdAt     DateTime  @default(now())
+  
+  sender        User      @relation("SentMessages", fields: [senderId], references: [id])
+  receiver      User      @relation("ReceivedMessages", fields: [receiverId], references: [id])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CASINO
+// ═══════════════════════════════════════════════════════════════════════════
+
+model CasinoStats {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  
+  // Totals
+  totalWagered    Int       @default(0)
+  totalWon        Int       @default(0)
+  totalLost       Int       @default(0)
+  gamesPlayed     Int       @default(0)
+  
+  // Per game stats (JSON)
+  coinflipStats   String?   // {played, won, lost, wagered, profit}
+  jackpotStats    String?
+  rouletteStats   String?
+  crashStats      String?
+  casesStats      String?
+  minesStats      String?
+  diceStats       String?
+  wheelStats      String?
+  blackjackStats  String?
+  slotsStats      String?
+  
+  // Streaks
+  winStreak       Int       @default(0)
+  maxWinStreak    Int       @default(0)
+  lossStreak      Int       @default(0)
+  maxLossStreak   Int       @default(0)
+  
+  // Records
+  biggestWin      Int       @default(0)
+  biggestLoss     Int       @default(0)
+  highestMultiplier Float   @default(0)
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CasinoGame {
+  id            String    @id @default(cuid())
+  
+  userId        String
+  game          String    // coinflip, jackpot, roulette, crash, cases, mines, dice, wheel, blackjack, slots
+  betAmount     Int
+  betType       String    @default("coins") // coins, skin
+  skinId        String?   // if betting with skin
+  
+  // Result
+  result        String    // win, lose
+  payout        Int       @default(0)
+  multiplier    Float     @default(0)
+  profit        Int       @default(0)
+  
+  // Game-specific data (JSON)
+  gameData      String?   // e.g., crash multiplier, roulette number, etc.
+  
+  // Provably fair
+  serverSeed    String?
+  clientSeed    String?
+  nonce         Int?
+  
+  createdAt     DateTime  @default(now())
+  
+  user          User      @relation(fields: [userId], references: [id])
+}
+
+model CasinoJackpot {
+  id            String    @id @default(cuid())
+  
+  // Pot info
+  totalPot      Int       @default(0)
+  playerCount   Int       @default(0)
+  players       String    // JSON array of {odometer oderId oderId oderId oderId oderId, oderId oderId, oderId oderId}
+  
+  // Winner
+  winnerId      String?
+  winnerName    String?
+  winningTicket Int?
+  
+  // Status
+  status        String    @default("open") // open, spinning, finished
+  endsAt        DateTime?
+  
+  // Provably fair
+  serverSeed    String?
+  clientSeed    String?
+  
+  createdAt     DateTime  @default(now())
+  finishedAt    DateTime?
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VOTES & REWARDS
+// ═══════════════════════════════════════════════════════════════════════════
+
+model Vote {
+  id            String    @id @default(cuid())
+  
+  userId        String
+  siteId        String    // rustservers, rust-servers-net, etc.
+  siteName      String
+  
+  // Reward
+  rewardCoins   Int       @default(0)
+  rewardXp      Int       @default(0)
+  claimed       Boolean   @default(false)
+  
+  // Tracking
+  ipAddress     String?
+  userAgent     String?
+  
+  votedAt       DateTime  @default(now())
+  
+  user          User      @relation(fields: [userId], references: [id])
+  
+  @@unique([userId, siteId, votedAt])
+}
+
+model VoteSite {
+  id            String    @id @default(cuid())
+  siteId        String    @unique
+  name          String
+  url           String
+  icon          String?
+  rewardCoins   Int       @default(100)
+  rewardXp      Int       @default(50)
+  cooldownHours Int       @default(24)
+  isActive      Boolean   @default(true)
+  order         Int       @default(0)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// APPEALS & CONTACT
+// ═══════════════════════════════════════════════════════════════════════════
+
+model Appeal {
+  id            String    @id @default(cuid())
+  ticketId      String    @unique @default(cuid())
+  
+  // Requester info
+  userId        String?
+  username      String
+  steamId       String
+  email         String
+  
+  // Ban info
+  banReason     String
+  banDate       DateTime?
+  bannedBy      String?
+  
+  // Appeal content
+  appealText    String
+  evidence      String?   // URLs or descriptions
+  
+  // Status
+  status        String    @default("pending") // pending, reviewing, approved, denied, closed
+  priority      String    @default("normal") // low, normal, high
+  
+  // Response
+  assignedTo    String?
+  response      String?
+  respondedAt   DateTime?
+  
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  user          User?     @relation(fields: [userId], references: [id])
+  messages      AppealMessage[]
+}
+
+model AppealMessage {
+  id            String    @id @default(cuid())
+  appealId      String
+  authorId      String?
+  authorName    String
+  authorRole    String    @default("user") // user, staff, admin
+  content       String
+  isInternal    Boolean   @default(false) // staff-only notes
+  
+  createdAt     DateTime  @default(now())
+  
+  appeal        Appeal    @relation(fields: [appealId], references: [id], onDelete: Cascade)
+}
+
+model Contact {
+  id            String    @id @default(cuid())
+  ticketId      String    @unique @default(cuid())
+  
+  // Requester info
+  userId        String?
+  name          String
+  email         String
+  
+  // Content
+  subject       String
+  category      String    @default("general") // general, technical, billing, report, other
+  message       String
+  
+  // Status
+  status        String    @default("open") // open, in_progress, resolved, closed
+  priority      String    @default("normal")
+  
+  // Response
+  assignedTo    String?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  user          User?     @relation(fields: [userId], references: [id])
+  messages      ContactMessage[]
+}
+
+model ContactMessage {
+  id            String    @id @default(cuid())
+  contactId     String
+  authorId      String?
+  authorName    String
+  authorRole    String    @default("user")
+  content       String
+  
+  createdAt     DateTime  @default(now())
+  
+  contact       Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SHOP & ORDERS
+// ═══════════════════════════════════════════════════════════════════════════
+
+model ShopProduct {
+  id            String    @id @default(cuid())
+  name          String
+  slug          String    @unique
+  description   String?
+  image         String?
+  
+  // Pricing
+  price         Float
+  originalPrice Float?
+  currency      String    @default("EUR")
+  
+  // Category
+  category      String    // vip, kits, skins, items, currency, bundles, services
+  rarity        String    @default("common")
+  
+  // Stock
+  stock         Int?      // null = unlimited
+  sold          Int       @default(0)
+  
+  // Flags
+  isActive      Boolean   @default(true)
+  isFeatured    Boolean   @default(false)
+  isLimited     Boolean   @default(false)
+  
+  // Delivery
+  deliveryType  String    @default("instant") // instant, manual
+  deliveryData  String?   // command to run, items to give, etc.
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  orders        ShopOrderItem[]
+}
+
+model ShopOrder {
+  id            String    @id @default(cuid())
+  oderId        String    @unique @default(cuid())
+  
+  userId        String
+  
+  // Payment
+  subtotal      Float
+  tax           Float     @default(0)
+  total         Float
+  currency      String    @default("EUR")
+  paymentMethod String?   // stripe, paypal, paysafecard
+  paymentId     String?   // external payment ID
+  
+  // Status
+  status        String    @default("pending") // pending, paid, processing, completed, refunded, cancelled
+  
+  // Delivery
+  deliveredAt   DateTime?
+  
+  // Customer info
+  email         String
+  steamId       String?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  user          User      @relation(fields: [userId], references: [id])
+  items         ShopOrderItem[]
+}
+
+model ShopOrderItem {
+  id            String    @id @default(cuid())
+  orderId       String
+  productId     String
+  
+  quantity      Int       @default(1)
+  priceEach     Float
+  totalPrice    Float
+  
+  // Delivery status
+  delivered     Boolean   @default(false)
+  deliveredAt   DateTime?
+  
+  order         ShopOrder    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product       ShopProduct  @relation(fields: [productId], references: [id])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ACHIEVEMENTS & GAMIFICATION
+// ═══════════════════════════════════════════════════════════════════════════
+
+model Achievement {
+  id            String    @id @default(cuid())
+  name          String
+  slug          String    @unique
+  description   String
+  icon          String?
+  
+  // Category
+  category      String    // combat, survival, social, casino, special
+  
+  // Requirements (JSON)
+  requirements  String    // {type: 'kills', target: 100}
+  
+  // Rewards
+  rewardXp      Int       @default(0)
+  rewardCoins   Int       @default(0)
+  rewardTitle   String?
+  
+  // Rarity
+  rarity        String    @default("common")
+  points        Int       @default(10)
+  
+  // Flags
+  isHidden      Boolean   @default(false)
+  isLimited     Boolean   @default(false)
+  
+  createdAt     DateTime  @default(now())
+  
+  users         UserAchievement[]
+}
+
+model UserAchievement {
+  id            String    @id @default(cuid())
+  
+  userId        String
+  achievementId String
+  
+  // Progress
+  progress      Int       @default(0)
+  target        Int       @default(100)
+  completed     Boolean   @default(false)
+  completedAt   DateTime?
+  
+  // Claimed reward
+  claimed       Boolean   @default(false)
+  claimedAt     DateTime?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+  
+  @@unique([userId, achievementId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+model Notification {
+  id            String    @id @default(cuid())
+  userId        String
+  
+  type          String    // system, forum, casino, achievement, shop, message
+  title         String
+  message       String
+  link          String?
+  icon          String?
+  
+  isRead        Boolean   @default(false)
+  readAt        DateTime?
+  
+  createdAt     DateTime  @default(now())
+  
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// NEWS & CONTENT
+// ═══════════════════════════════════════════════════════════════════════════
+
+model News {
+  id            String    @id @default(cuid())
+  title         String
+  slug          String    @unique
+  excerpt       String
+  content       String
+  image         String?
+  ctaLabel      String?
+  ctaUrl        String?
+  
+  // Category
+  category      String    @default("Ankündigung")
+  tags          String?   // JSON array
+  
+  // Author
+  authorId      String?
+  authorName    String    @default("Eldrun Team")
+  
+  // Flags
+  isPinned      Boolean   @default(false)
+  published     Boolean   @default(false)
+  publishedAt   DateTime?
+  isSimulated   Boolean   @default(false)
+  
+  // Stats
+  views         Int       @default(0)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SERVER
+// ═══════════════════════════════════════════════════════════════════════════
+
+model ServerStats {
+  id            String    @id @default(cuid())
+  
+  players       Int       @default(0)
+  maxPlayers    Int       @default(200)
+  queue         Int       @default(0)
+  
+  status        String    @default("online")
+  uptime        Int       @default(0)
+  fps           Int       @default(60)
+  entities      Int       @default(0)
+  sleepers      Int       @default(0)
+  
+  // Map info
+  mapName       String?
+  mapSeed       Int?
+  mapSize       Int?
+  
+  recordedAt    DateTime  @default(now())
+}
+
+model ServerConfig {
+  id            String    @id @default(cuid())
+  key           String    @unique
+  value         String
+  description   String?
+  updatedAt     DateTime  @updatedAt
+}
+
+model ServerEvent {
+  id         String   @id @default(cuid())
+  type       String
+  message    String
+  players    String?
+  location   String?
+  createdAt  DateTime @default(now())
+}
+
+model OpsSession {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  title       String
+  description String?
+  status      String   @default("active") // active, archived
+  startsAt    DateTime @default(now())
+  endsAt      DateTime?
+  timerStatus String   @default("stopped") // stopped, running, paused
+  timerStartAt DateTime?
+  timerElapsedMs Int    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  pins        OpsPin[]
+  roles       OpsRoleAssignment[]
+  resources   OpsResourceEvent[]
+  alerts      OpsAlert[]
+}
+
+model OpsPin {
+  id        String   @id @default(cuid())
+  sessionId String
+  type      String   // danger, loot, base, meet, enemy, note
+  label     String
+  note      String?
+  x         Float
+  y         Float
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  session   OpsSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+}
+
+model OpsRoleAssignment {
+  id        String   @id @default(cuid())
+  sessionId String
+  role      String   // leader, scout, builder, medic, logistics
+  userId    String?
+  nickname  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  session   OpsSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, role])
+}
+
+model OpsResourceEvent {
+  id        String   @id @default(cuid())
+  sessionId String
+  resource  String   // sulfur, metal, gp, meds, scrap, hqm
+  delta     Int
+  note      String?
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  session   OpsSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+}
+
+model OpsAlert {
+  id        String   @id @default(cuid())
+  sessionId String
+  type      String   // raid, rare_drop, spotted, system
+  severity  String   @default("info") // info, warn, critical
+  message   String
+  x         Float?
+  y         Float?
+  createdAt DateTime @default(now())
+
+  session   OpsSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+}
+
+model Blacklist {
+  id            String    @id @default(cuid())
+  
+  steamId       String    @unique
+  playerName    String
+  
+  // Ban info
+  reason        String
+  bannedBy      String
+  bannedAt      DateTime  @default(now())
+  expiresAt     DateTime?
+  isPermanent   Boolean   @default(false)
+  
+  // Appeal status
+  appealId      String?
+  canAppeal     Boolean   @default(true)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EMAIL LOGS
+// ═══════════════════════════════════════════════════════════════════════════
+
+model EmailLog {
+  id            String    @id @default(cuid())
+  
+  to            String
+  from          String
+  subject       String
+  template      String?
+  
+  status        String    @default("pending") // pending, sent, failed
+  error         String?
+  
+  sentAt        DateTime?
+  createdAt     DateTime  @default(now())
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUDIT LOG
+// ═══════════════════════════════════════════════════════════════════════════
+
+model AuditLog {
+  id            String    @id @default(cuid())
+  
+  userId        String?
+  userName      String?
+  action        String    // login, logout, create, update, delete, etc.
+  entity        String    // user, post, thread, etc.
+  entityId      String?
+  
+  oldData       String?   // JSON
+  newData       String?   // JSON
+  
+  ipAddress     String?
+  userAgent     String?
+  
+  createdAt     DateTime  @default(now())
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CHAT SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════
+
+model ChatChannel {
+  id            String    @id @default(cuid())
+  name          String
+  slug          String    @unique
+  description   String?
+  type          String    @default("public") // public, private, group, dm, vip
+  icon          String?
+  color         String    @default("#D4AF37")
+  
+  // Settings
+  isLocked      Boolean   @default(false)
+  slowMode      Int       @default(0) // seconds between messages
+  maxMembers    Int?
+  
+  // Stats
+  memberCount   Int       @default(0)
+  messageCount  Int       @default(0)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  messages      ChatMessage[]
+  members       ChatMember[]
+}
+
+model ChatMember {
+  id            String    @id @default(cuid())
+  channelId     String
+  userId        String
+  
+  role          String    @default("member") // member, moderator, admin, owner
+  nickname      String?
+  
+  // Permissions
+  canSend       Boolean   @default(true)
+  canReact      Boolean   @default(true)
+  isMuted       Boolean   @default(false)
+  mutedUntil    DateTime?
+  
+  joinedAt      DateTime  @default(now())
+  lastReadAt    DateTime  @default(now())
+  
+  channel       ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  
+  @@unique([channelId, userId])
+}
+
+model ChatMessage {
+  id            String    @id @default(cuid())
+  channelId     String
+  authorId      String
+  
+  content       String
+  type          String    @default("text") // text, image, gif, system, gift
+  
+  // Rich content
+  attachments   String?   // JSON array of attachments
+  embeds        String?   // JSON array of embeds
+  
+  // Special message data
+  giftType      String?
+  giftAmount    Int?
+  giftRecipientId String?
+  
+  // Interactions
+  reactions     String?   // JSON object {emoji: [userIds]}
+  
+  // Flags
+  isPinned      Boolean   @default(false)
+  isEdited      Boolean   @default(false)
+  isDeleted     Boolean   @default(false)
+  isSimulated   Boolean   @default(false)
+  
+  // Reply
+  replyToId     String?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  channel       ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  replyTo       ChatMessage? @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies       ChatMessage[] @relation("MessageReplies")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FACTIONS - Seraphar vs Vorgaroth
+// ═══════════════════════════════════════════════════════════════════════════
+
+model Faction {
+  id            String    @id @default(cuid())
+  code          String    @unique // seraphar, vorgaroth
+  name          String
+  motto         String?
+  description   String?
+  icon          String?
+  color         String
+  colorRgba     String?
+  
+  // Stats
+  totalMembers  Int       @default(0)
+  onlineMembers Int       @default(0)
+  totalKills    Int       @default(0)
+  totalDeaths   Int       @default(0)
+  territoriesControlled Int @default(0)
+  warsWon       Int       @default(0)
+  warsLost      Int       @default(0)
+  totalXp       Int       @default(0)
+  
+  // Bonuses (JSON)
+  bonuses       String?   // {healing: 0.10, defense: 0.15}
+  perks         String?   // ["perk1", "perk2"]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model FactionWar {
+  id            String    @id @default(cuid())
+  
+  state         String    @default("peace") // peace, preparation, active, cooldown
+  startTime     DateTime?
+  endTime       DateTime?
+  
+  serapharScore Int       @default(0)
+  vorgarothScore Int      @default(0)
+  winnerId      String?   // faction code
+  
+  // Contributions (JSON)
+  contributions String?   // {playerId: points}
+  events        String?   // ["event1", "event2"]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CLASSES & SKILLS
+// ═══════════════════════════════════════════════════════════════════════════
+
+model GameClass {
+  id            String    @id @default(cuid())
+  code          String    @unique // warrior, archer, mage, rogue, paladin, necromancer
+  name          String
+  description   String?
+  icon          String?
+  
+  // Stats
+  maxMana       Int       @default(100)
+  manaRegen     Float     @default(5.0)
+  baseStats     String?   // JSON {strength: 10, agility: 5}
+  
+  requiredFaction String? // optional faction requirement
+  isEnabled     Boolean   @default(true)
+  
+  createdAt     DateTime  @default(now())
+  
+  skills        Skill[]
+}
+
+model Skill {
+  id            String    @id @default(cuid())
+  classId       String
+  code          String    @unique
+  name          String
+  description   String?
+  icon          String?
+  
+  type          String    @default("active") // passive, active, ultimate
+  damageType    String    @default("physical") // physical, magic, fire, ice, lightning, holy, dark
+  targetType    String    @default("self") // self, singleEnemy, singleAlly, aoe, cone
+  
+  tierLevel     Int       @default(1)
+  maxRank       Int       @default(5)
+  requiredPoints Int      @default(0)
+  
+  baseDamage    Float     @default(0)
+  damagePerRank Float     @default(10)
+  baseCooldown  Float     @default(10)
+  baseManaCost  Int       @default(20)
+  range         Float     @default(10)
+  aoeRadius     Float     @default(0)
+  
+  effects       String?   // JSON effects
+  isEnabled     Boolean   @default(true)
+  
+  createdAt     DateTime  @default(now())
+  
+  gameClass     GameClass @relation(fields: [classId], references: [id])
+}
+
+model PlayerClass {
+  id            String    @id @default(cuid())
+  playerId      String    @unique
+  
+  currentClass  String?   // class code
+  currentMana   Int       @default(100)
+  maxMana       Int       @default(100)
+  skillPoints   Int       @default(0)
+  
+  skillRanks    String?   // JSON {skillId: rank}
+  activeSkillBar String?  // JSON ["skill1", "skill2", ...]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PROFESSIONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+model Profession {
+  id            String    @id @default(cuid())
+  code          String    @unique // mining, woodcutting, fishing, crafting, farming
+  name          String
+  description   String?
+  icon          String?
+  type          String    @default("gathering") // gathering, crafting, processing
+  
+  maxLevel      Int       @default(100)
+  xpPerLevel    String?   // JSON {level: requiredXp}
+  levelBonuses  String?   // JSON {level: {gatherBonus: 0.1, ...}}
+  
+  isEnabled     Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  
+  recipes       Recipe[]
+}
+
+model Recipe {
+  id            String    @id @default(cuid())
+  professionId  String
+  code          String    @unique
+  name          String
+  description   String?
+  
+  resultItem    String
+  resultAmount  Int       @default(1)
+  resultSkin    String?
+  
+  requiredLevel Int       @default(1)
+  xpGain        Int       @default(10)
+  craftTime     Float     @default(5)
+  
+  ingredients   String    // JSON {itemShortname: amount}
+  isEnabled     Boolean   @default(true)
+  
+  createdAt     DateTime  @default(now())
+  
+  profession    Profession @relation(fields: [professionId], references: [id])
+}
+
+model PlayerProfession {
+  id            String    @id @default(cuid())
+  playerId      String
+  professionId  String
+  
+  level         Int       @default(1)
+  xp            Int       @default(0)
+  learnedRecipes String?  // JSON array
+  isMain        Boolean   @default(false)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@unique([playerId, professionId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// QUESTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+model Quest {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  name          String
+  description   String?
+  icon          String?
+  
+  type          String    @default("daily") // daily, weekly, story, event, faction
+  requiredLevel Int       @default(1)
+  requiredFaction String?
+  
+  objectives    String    // JSON [{id, description, type, target, required}]
+  rewards       String    // JSON {gold, xp, honor, items: []}
+  
+  isRepeatable  Boolean   @default(false)
+  cooldownHours Int       @default(0)
+  sortOrder     Int       @default(0)
+  isEnabled     Boolean   @default(true)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model PlayerQuest {
+  id            String    @id @default(cuid())
+  playerId      String
+  questId       String
+  
+  status        String    @default("active") // active, completed, failed
+  progress      String?   // JSON {objectiveId: currentAmount}
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+  
+  @@unique([playerId, questId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BATTLE PASS / SEASONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+model Season {
+  id            String    @id @default(cuid())
+  number        Int       @unique
+  name          String
+  theme         String?
+  description   String?
+  
+  startDate     DateTime
+  endDate       DateTime
+  
+  maxTiers      Int       @default(100)
+  baseXpPerTier Int       @default(1000)
+  xpScaling     Float     @default(1.05)
+  premiumCost   Int       @default(5000)
+  
+  isActive      Boolean   @default(false)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  tiers         SeasonTier[]
+  challenges    SeasonChallenge[]
+}
+
+model SeasonTier {
+  id            String    @id @default(cuid())
+  seasonId      String
+  level         Int
+  requiredXp    Int
+  
+  freeReward    String?   // JSON {type, item, amount, skin, gold, xp, title, cosmetic}
+  premiumReward String?   // JSON same structure
+  
+  season        Season    @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  
+  @@unique([seasonId, level])
+}
+
+model SeasonChallenge {
+  id            String    @id @default(cuid())
+  seasonId      String
+  code          String
+  name          String
+  description   String?
+  
+  triggerType   String
+  requiredAmount Int
+  seasonXp      Int       @default(100)
+  
+  week          Int       @default(0) // 0 = all season
+  isDaily       Boolean   @default(false)
+  
+  season        Season    @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+}
+
+model PlayerSeason {
+  id            String    @id @default(cuid())
+  playerId      String
+  seasonId      String
+  
+  seasonXp      Int       @default(0)
+  currentTier   Int       @default(0)
+  hasPremium    Boolean   @default(false)
+  
+  claimedFreeTiers String?    // JSON array of tier levels
+  claimedPremiumTiers String? // JSON array
+  challengeProgress String?   // JSON {challengeId: amount}
+  completedChallenges String? // JSON array
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@unique([playerId, seasonId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EVENTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+model GameEvent {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  name          String
+  description   String?
+  icon          String?
+  
+  type          String    // bossRush, territoryWar, gatheringContest, pvpArena, invasion, treasure, factionWar
+  durationMinutes Int     @default(30)
+  minPlayers    Int       @default(1)
+  maxPlayers    Int       @default(50)
+  
+  locationX     Float?
+  locationY     Float?
+  locationZ     Float?
+  radius        Float     @default(100)
+  
+  baseXpReward  Int       @default(500)
+  baseGoldReward Int      @default(250)
+  topRewardMultiplier Float @default(3.0)
+  
+  schedule      String?   // JSON [{hour, minute, days: []}]
+  isEnabled     Boolean   @default(true)
+  
+  createdAt     DateTime  @default(now())
+}
+
+model ActiveGameEvent {
+  id            String    @id @default(cuid())
+  eventId       String
+  
+  state         String    @default("scheduled") // scheduled, starting, active, ending, completed
+  startTime     DateTime
+  endTime       DateTime?
+  
+  participants  String?   // JSON {playerId: {name, score, kills, deaths, objectives, joinedAt}}
+  factionScores String?   // JSON {factionId: score}
+  winners       String?   // JSON array of playerIds
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HEATMAP
+// ═══════════════════════════════════════════════════════════════════════════
+
+model HeatmapEvent {
+  id            String    @id @default(cuid())
+  
+  type          String    // kill, death, loot, raid, movement, build, gather
+  playerId      String?
+  playerName    String?
+  targetId      String?
+  targetName    String?
+  
+  x             Float
+  y             Float
+  z             Float?
+  
+  value         Int       @default(1)
+  metadata      String?   // JSON extra data
+  
+  createdAt     DateTime  @default(now())
+  
+  @@index([type])
+  @@index([createdAt])
+}
+
+model HeatmapAggregate {
+  id            String    @id @default(cuid())
+  
+  type          String    // kills, deaths, loot, raids, activity
+  gridX         Int       // Grid cell X
+  gridY         Int       // Grid cell Y
+  
+  count         Int       @default(0)
+  intensity     Float     @default(0)
+  
+  periodType    String    @default("hour") // hour, day, week, all
+  periodStart   DateTime
+  
+  updatedAt     DateTime  @updatedAt
+  
+  @@unique([type, gridX, gridY, periodType, periodStart])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUCTION HOUSE
+// ═══════════════════════════════════════════════════════════════════════════
+
+model AuctionListing {
+  id            String    @id @default(cuid())
+  
+  sellerId      String
+  sellerName    String
+  
+  itemShortname String
+  itemAmount    Int
+  itemSkinId    String?
+  itemName      String
+  category      String
+  
+  type          String    @default("both") // auction, buyNow, both
+  startPrice    Int
+  buyNowPrice   Int?
+  currentBid    Int       @default(0)
+  
+  highestBidderId String?
+  highestBidderName String?
+  bidCount      Int       @default(0)
+  
+  state         String    @default("active") // active, sold, expired, cancelled
+  expiresAt     DateTime
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  bids          AuctionBid[]
+}
+
+model AuctionBid {
+  id            String    @id @default(cuid())
+  listingId     String
+  
+  bidderId      String
+  bidderName    String
+  amount        Int
+  
+  createdAt     DateTime  @default(now())
+  
+  listing       AuctionListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}
+
+model AuctionMail {
+  id            String    @id @default(cuid())
+  playerId      String
+  
+  type          String    // sold, outbid, won, expired, cancelled
+  itemShortname String?
+  itemAmount    Int?
+  itemSkinId    String?
+  gold          Int?
+  
+  message       String
+  isRead        Boolean   @default(false)
+  
+  createdAt     DateTime  @default(now())
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TICKETS / SUPPORT
+// ═══════════════════════════════════════════════════════════════════════════
+
+model Ticket {
+  id            String    @id @default(cuid())
+  ticketNumber  String    @unique
+  
+  userId        String?
+  username      String
+  email         String
+  
+  category      String    @default("general") // general, bug, abuse, billing, appeal, suggestion
+  subject       String
+  description   String
+  priority      String    @default("normal") // low, normal, high, urgent
+  
+  status        String    @default("open") // open, inProgress, waitingForUser, resolved, closed
+  assignedTo    String?
+  
+  tags          String?   // JSON array
+  metadata      String?   // JSON extra data
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  resolvedAt    DateTime?
+  
+  messages      TicketMessage[]
+}
+
+model TicketMessage {
+  id            String    @id @default(cuid())
+  ticketId      String
+  
+  authorId      String?
+  authorName    String
+  authorRole    String    @default("user") // user, support, admin
+  
+  content       String
+  attachments   String?   // JSON array
+  isInternal    Boolean   @default(false)
+  
+  createdAt     DateTime  @default(now())
+  
+  ticket        Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CHANGELOG
+// ═══════════════════════════════════════════════════════════════════════════
+
+model ChangelogRelease {
+  id            String    @id @default(cuid())
+  version       String    @unique
+  title         String
+  description   String?
+  
+  type          String    @default("update") // major, minor, patch, hotfix, update
+  isPublished   Boolean   @default(false)
+  publishedAt   DateTime?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  items         ChangelogItem[]
+}
+
+model ChangelogItem {
+  id            String    @id @default(cuid())
+  releaseId     String
+  
+  type          String    // added, changed, fixed, removed, improved, security
+  category      String    // gameplay, balance, ui, performance, bugs, content
+  title         String
+  description   String?
+  
+  affectedSystems String? // JSON array
+  sortOrder     Int       @default(0)
+  
+  release       ChangelogRelease @relation(fields: [releaseId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ITEM CATALOG & LORE
+// ═══════════════════════════════════════════════════════════════════════════
+
+model ItemCatalog {
+  id            String    @id @default(cuid())
+  shortname     String    @unique
+  displayName   String
+  description   String?
+  
+  category      String    // weapons, armor, tools, resources, consumables, misc
+  subcategory   String?
+  rarity        String    @default("common") // common, uncommon, rare, epic, legendary
+  
+  basePrice     Int       @default(0)
+  sellPrice     Int       @default(0)
+  
+  stackSize     Int       @default(1)
+  isEnabled     Boolean   @default(true)
+  
+  metadata      String?   // JSON extra data
+  createdAt     DateTime  @default(now())
+}
+
+model LoreEntry {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  title         String
+  content       String
+  
+  category      String    // history, factions, locations, characters, creatures, items
+  subcategory   String?
+  
+  relatedEntries String?  // JSON array of codes
+  tags          String?   // JSON array
+  
+  isPublished   Boolean   @default(true)
+  sortOrder     Int       @default(0)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SIMULATION & DEMO MODE
+// ═══════════════════════════════════════════════════════════════════════════
+
+model SimulationConfig {
+  id            String    @id @default(cuid())
+  key           String    @unique
+  value         String
+  description   String?
+  
+  updatedAt     DateTime  @updatedAt
+}
+
+model SimulationLog {
+  id            String    @id @default(cuid())
+  
+  type          String    // start, stop, reset, generate, error
+  module        String    // server, heatmap, chat, forum, news, events
+  message       String
+  data          String?   // JSON
+  
+  createdAt     DateTime  @default(now())
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STATIC PAGES (versioned)
+// ═══════════════════════════════════════════════════════════════════════════
+
+model StaticPage {
+  id            String    @id @default(cuid())
+  slug          String    @unique // impressum, privacy, terms, rules, faq
+  title         String
+  content       String
+  
+  version       Int       @default(1)
+  isPublished   Boolean   @default(true)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  history       StaticPageHistory[]
+}
+
+model StaticPageHistory {
+  id            String    @id @default(cuid())
+  pageId        String
+  
+  version       Int
+  title         String
+  content       String
+  changedBy     String?
+  changeReason  String?
+  
+  createdAt     DateTime  @default(now())
+  
+  page          StaticPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STAFF & STREAMS
+// ═══════════════════════════════════════════════════════════════════════════
+
+model StaffMember {
+  id            String    @id @default(cuid())
+  userId        String?   @unique
+  
+  name          String
+  role          String    // owner, admin, developer, moderator, support, builder
+  title         String?
+  description   String?
+  avatar        String?
+  
+  discordId     String?
+  steamId       String?
+  twitchId      String?
+  
+  isActive      Boolean   @default(true)
+  joinedAt      DateTime  @default(now())
+  sortOrder     Int       @default(0)
+}
+
+model Stream {
+  id            String    @id @default(cuid())
+  
+  platform      String    // twitch, youtube, kick
+  channelId     String
+  channelName   String
+  
+  title         String?
+  thumbnailUrl  String?
+  viewerCount   Int       @default(0)
+  
+  isLive        Boolean   @default(false)
+  isPartner     Boolean   @default(false)
+  isFeatured    Boolean   @default(false)
+  
+  lastCheckedAt DateTime  @default(now())
+  startedAt     DateTime?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@unique([platform, channelId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GALLERY
+// ═══════════════════════════════════════════════════════════════════════════
+
+model GalleryItem {
+  id            String    @id @default(cuid())
+  
+  type          String    @default("image") // image, video, screenshot
+  title         String?
+  description   String?
+  
+  url           String
+  thumbnailUrl  String?
+  
+  uploaderId    String?
+  uploaderName  String?
+  
+  category      String?   // builds, pvp, events, community, official
+  tags          String?   // JSON array
+  
+  views         Int       @default(0)
+  likes         Int       @default(0)
+  
+  isFeatured    Boolean   @default(false)
+  isApproved    Boolean   @default(false)
+  
+  createdAt     DateTime  @default(now())
+}
