@@ -142,7 +142,7 @@ export function AuthModal() {
       const endpoint = authMode === 'register' ? '/api/auth/register' : '/api/auth/login'
       const body = authMode === 'register' 
         ? { username, email, password }
-        : { email, password }
+        : { login: email, password }
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -441,7 +441,7 @@ export function AuthModal() {
                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-metal-500" />
                         <input
                           type="email"
-                          placeholder="E-Mail Adresse"
+                          placeholder="Benutzername oder E-Mail"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           className="w-full pl-12 pr-4 py-3 bg-metal-800 border border-metal-600 rounded-lg text-white placeholder:text-metal-500 focus:outline-none focus:border-rust-500 focus:ring-1 focus:ring-rust-500/50 transition-all"

@@ -76,29 +76,20 @@ export async function POST(request: NextRequest) {
     const saltRounds = 12
     const passwordHash = await bcrypt.hash(password, saltRounds)
 
-    // Generate verification token
-    const verifyToken = crypto.randomBytes(32).toString('hex')
-    const verifyExpires = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
-
-    // Create user with verification token
+    // Create user - ACTIVE IMMEDIATELY (no email verification)
     const user = await prisma.user.create({
       data: {
         username,
         email: email.toLowerCase(),
         passwordHash,
         role: 'player',
-        coins: 0,
-        casinoCoins: 0,
+        coins: 1000,
+        casinoCoins: 100,
         casinoWelcomeClaimed: false,
-        verifyToken,
-        verifyExpires,
-        emailVerified: false,
+        emailVerified: true, // ACTIVE IMMEDIATELY
+        level: 1,
+        xp: 0,
       },
-    })
-
-    // Send verification email (async, don't wait)
-    sendVerificationEmail(user.email, user.username, verifyToken).catch(err => {
-      console.error('Failed to send verification email:', err)
     })
 
     if (!JWT_SECRET) {
@@ -135,7 +126,7 @@ export async function POST(request: NextRequest) {
     // Return success with token
     const response = NextResponse.json({
       success: true,
-      message: 'Registrierung erfolgreich! Bitte bestätige deine E-Mail.',
+      message: 'Registrierung erfolgreich! Du bist sofort angemeldet.',
       user: {
         id: user.id,
         username: user.username,
