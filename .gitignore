@@ -14,3 +14,5 @@ node_modules
 /prisma/dev.db
 /prisma/*.db
 /prisma/*.sqlite
+
+/.git_backup_*

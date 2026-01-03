@@ -1,5 +1,9 @@
 # Eldrun Data Model - Setup Guide
 
+## Overview
+
+Dieses Setup Guide erklärt die Einrichtung der Eldrun Community-Website. Für die **Server-Administration** mit RCON-Kontrolle, Player Management, Plugin-Verwaltung und Discord-Integration siehe das **[Eldrun Admin Tool](ADMIN_TOOL.md)**.
+
 ## Quick Start
 
 ### 1. Environment Setup

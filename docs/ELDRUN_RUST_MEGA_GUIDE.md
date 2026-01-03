@@ -77,7 +77,150 @@
    - Embeds (YouTube, Twitch, Spotify) whitelisted.  
    - Editor: Markdown/Slate Hybrid mit Formatierungen, Polls, Reaktionen.
 
-### 3.3 Game Systems (Klassen, Berufe, Quests, Events)
+### 3.4 Eldrun Admin Tool – Server Management & Automation
+
+1. **Überblick & Zweck:**  
+   - Das Eldrun Admin Tool ist ein **natives Windows-WPF-Tool** (.NET 8.0) zur vollständigen Rust-Server-Administration.  
+   - Bietet RCON-Kontrolle, Player Management, Plugin-Verwaltung, Config-Editing, Discord-Integration und automatisierte Server-Operationen.  
+   - Nach vollständigem Audit & Refactoring **100% stabil und production-ready** mit moderner MVVM-Architektur.
+
+2. **Architektur & Tech Stack:**  
+   - **Framework:** .NET 8.0 + WPF (Native Windows UI)  
+   - **Pattern:** MVVM mit CommunityToolkit.Mvvm  
+   - **DI:** Microsoft.Extensions.Hosting für Service-Container  
+   - **Daten:** SQLite + Entity Framework Core für Server-Einstellungen  
+   - **Logging:** Serilog mit Datei-Rotation  
+   - **RCON:** WebSocket-basiert mit Timeout-Handling (5s)  
+   - **Discord:** Discord.NET mit Connect-Timeout (10s) + Ready-Wait  
+   - **JSON:** System.Text.Json mit Change-Detection (keine redundanten Writes)
+
+3. **Kern-Features im Detail:**  
+
+   **Server Management:**  
+   - Multi-Server-Unterstützung mit automatischem Reconnect  
+   - Echtzeit-Monitoring (FPS, Memory, Entities, Player Count)  
+   - Process-Service für externe RustDedicated-Prozesse  
+   - Automatische Server-Übernahme bei manuellen Starts  
+
+   **RCON Console:**  
+   - Vollständige Konsolen-Kontrolle mit Befehls-Historie  
+   - Quick-Commands für häufige Admin-Aufgaben  
+   - Server-Chat Integration mit Echtzeit-Nachrichten  
+
+   **Player Management:**  
+   - Live Spieler-Liste mit Statistiken (K/D, Spielzeit)  
+   - Kick/Ban mit Grund und Spieler-Historie  
+   - Automatische Player-Überwachung mit Rate-Limiting  
+
+   **Plugin System:**  
+   - Oxide/uMod und Carbon Unterstützung  
+   - Marketplace Integration (uMod, Codefling, Lone.Design, ChaosCode, GitHub)  
+   - Enable/Disable/Reload mit Live-Status  
+
+   **Config Editor:**  
+   - Echtzeit-Konfigurationsbearbeitung mit JSON-Validierung  
+   - File Watching mit idempotentem Start/Stop (kein Pingpong)  
+   - Auto-Backup bei Änderungen  
+
+   **Discord Integration:**  
+   - Bot-Anbindung mit Chat-Bridge und Alert-System  
+   - Admin-Commands über Discord mit Timeout-Schutz  
+   - Non-blocking Dispose zur Vermeidung von UI-Deadlocks  
+
+4. **Setup & Installation:**  
+
+   **Voraussetzungen:**  
+   - Windows 10/11  
+   - .NET 8.0 Runtime  
+
+   **Installation:**  
+   ```bash
+   # Release Build erstellen
+   dotnet build --configuration Release
+   
+   # Selbstständige EXE erstellen
+   dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+   
+   # Ausführen
+   EldrunAdminTool.exe
+   ```
+
+   **Ersteinrichtung:**  
+   1. SteamCMD installieren (Server Setup → SteamCMD)  
+   2. Rust Server installieren (Name, Pfad, Branch wählen)  
+   3. Mod Framework installieren (Oxide oder Carbon)  
+   4. RCON-Verbindung konfigurieren (IP, Port 28016, Password)  
+   5. Server verbinden und Dashboard nutzen  
+
+5. **Stabilitäts-Features (Post-Audit 2026-01-03):**  
+
+   **Threading-Sicherheit:**  
+   - Keine UI-Deadlocks durch `Dispatcher.Invoke` → `BeginInvoke/Dispatch`  
+   - Alle Background-Loops mit CancellationTokens deterministisch  
+   - Fire-and-forget Tasks mit Exception-Observation  
+
+   **Ressourcen-Management:**  
+   - Alle Services implementieren `IDisposable` mit sauberem Unsubscribe  
+   - Watcher idempotent (Config, Settings)  
+   - Memory-Leaks eliminiert  
+
+   **Fehlerbehandlung:**  
+   - RCON: Offline vs Error Klassifizierung (Timeout ≠ Konfigurationsfehler)  
+   - Discord: Connect Timeout + Ready-Wait, Cleanup bei Fehlern  
+   - Process Service: Win32 Access Denied sicher gehandhabt  
+
+   **Performance:**  
+   - UI-Responsiveness: Kein Blocking, flüssige Navigation  
+   - I/O-Effizienz: Change-Detection für Settings/Theme, keine redundanten Writes  
+   - Rate-Limiting: Alerts ohne Spam  
+
+6. **Konfiguration & Best Practices:**  
+
+   **Server-Einstellungen:**  
+   - Address: IP/Hostname des Rust-Servers  
+   - RCON Port: Standard 28016  
+   - RCON Password: Server-Passwort  
+
+   **Discord Bot Setup:**  
+   1. Bot auf Discord Developer Portal erstellen  
+   2. Token in Einstellungen eintragen  
+   3. Bot auf Server einladen  
+
+   **Performance-Tuning:**  
+   - Monitoring-Intervalle über UI einstellbar  
+   - Log-Level: Warning bei erwartbaren Fehlern, Debug für Details  
+   - Auto-Takeover-Cooldown: 10 Minuten pro PID  
+
+7. **Troubleshooting & Wartung:**  
+
+   **Häufige Issues:**  
+   - **UI friert ein:** Wurde durch Dispatch-Helper eliminiert  
+   - **RCON verbindet nicht:** Status zeigt "Server offline" bei Timeout, "Verbindungsfehler" bei Konfigurationsproblemen  
+   - **Discord hängt:** Timeout nach 10s, sauberer Cleanup  
+
+   **Log-Analyse:**  
+   - Logs in `logs/eldrun-.log` mit täglicher Rotation  
+   - Keine `[ERR]/[FTL]` im Normalbetrieb nach Audit  
+   - Debug-Details nur bei Bedarf aktiv  
+
+   **Wartung:**  
+   - Regelmäßige Backups der Server-Konfiguration  
+   - Plugin-Updates über Marketplace  
+   - System-Health-Monitoring über Admin Center  
+
+8. **Integration mit Website:**  
+
+   Das Admin Tool kann optional mit der Eldrun Website integriert werden:  
+   - Server-Status-API für Live-Anzeige auf Website  
+   - Player-Stats-Sync für Leaderboards  
+   - Event-Dispatch für Website-Events  
+   - Discord-Bridge für Community-Chat  
+
+   Dafür müssen entsprechende API-Endpunkte in der Website implementiert werden, die die Admin-Tool-Daten im JSON-Format bereitstellen.
+
+   **Weitere Dokumentation:** Siehe `ADMIN_TOOL.md` für vollständige technische Dokumentation und API-Integration.
+
+### 3.5 Game Systems (Klassen, Berufe, Quests, Events)
 
 1. **Klassen (`/classes`):**  
    - Datenquellen über `src/app/classes/page.tsx` + JSON/TS arrays.  

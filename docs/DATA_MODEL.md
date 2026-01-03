@@ -4,6 +4,8 @@
 
 Das Eldrun-Datenmodell ist eine umfassende Struktur für die Community-Website, die alle Spiel- und Community-Domains abdeckt.
 
+**Admin Tool Integration:** Für die Server-Administration steht das [Eldrun Admin Tool](ADMIN_TOOL.md) zur Verfügung – ein natives Windows-WPF-Tool mit RCON-Kontrolle, Player Management, Plugin-Verwaltung und Discord-Integration.
+
 ## Entity Relationship Diagram (High-Level)
 
 ```
