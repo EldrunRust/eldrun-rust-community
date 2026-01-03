@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 
 export function HeroBackgroundRotator({
-  intervalMs = 30000,
+  intervalMs = 5000,
   images,
 }: {
   intervalMs?: number
